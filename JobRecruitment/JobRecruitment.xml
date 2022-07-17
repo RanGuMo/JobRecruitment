@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JobRecruitment</name>
+    </assembly>
+    <members>
+        <member name="M:JobRecruitment.Filter.MyTypeFilter.CreateFactory(System.Type)">
+            <summary>
+            创建工厂委托
+            </summary>
+            <param name="instanceType">Filter类的类型</param>
+            <returns></returns>
+        </member>
+        <member name="M:JobRecruitment.Filter.MyTypeFilter.FindApplicableConstructor(System.Type,System.Reflection.ConstructorInfo@)">
+            <summary>
+            获取类构造函数信息
+            </summary>
+            <param name="instanceType">Filter类的类型</param>3
+            <param name="matchingConstructor">引用传递传入的“构造函数信息”，获取值后返回</param>
+        </member>
+        <member name="M:JobRecruitment.Filter.MyTypeFilter.BuildFactoryExpression(System.Reflection.ConstructorInfo,System.Linq.Expressions.Expression)">
+            <summary>
+            创建表达式
+            </summary>
+            <param name="constructor">构造函数信息</param>
+            <param name="serviceProvider"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

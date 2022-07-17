@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <script src="../lib/vue.min.js"></script>
+        <script src="../lib/axios.min.js"></script>
+    </head>
+
+    <body>
+        <div id="JobListPage">
+            <div class="search-pad">
+                <div class="search-text">
+                    <input type="text" placeholder="实习生招聘" v-model="searchText">
+                    <img src="../statics/icons/search.png" alt="" @click="searchJob">
+                </div>
+                <!-- <div class="search-type">
+                    <ul>
+                        <li>全栈</li>
+                        <li>全栈</li>
+                        <li>全栈</li>
+                        <li>全栈</li>
+                        <li>全栈</li>
+                    </ul>
+                </div> -->
+            </div>
+            <div class="job-filter-pad">
+                <ul class="filter-type">
+                    <li v-for="requriement in requriements"
+                        :key="requriement.requriementKey">
+                        <span>{{requriement.requriementKey}}：</span>
+                        <ul class="filter-item">
+                            <li :class="{'selected':requriement.selected==null}"
+                                @click="selectReq(requriement,null)">不限</li>
+                            <li
+                                :class="{'selected':requriement.selected==value}"
+                                v-for="value in requriement.requriementItems"
+                                @click="selectReq(requriement,value)"
+                                :key="value">{{value}}</li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="selected-filter">
+                    <li v-for="requriement in requriements"
+                        v-if="requriement.selected!=null">{{requriement.selected}}</li>
+                </ul>
+            </div>
+            <div class="job-list-pad">
+                <div class="job-sort-pad">
+                    <span :class="{'selected':sortIndex==1}" @click="sortAll">综合排序</span>
+                    <span :class="{'selected':sortIndex==2}"
+                        @click="sortPublish">最新发布</span>
+                    <span :class="{'selected':sortIndex==3}" @click="sortPay">最高薪酬</span>
+                    <div class="job-count">
+                        为您找到<span>{{jobs.length}}</span>个符合您要求的职位
+                    </div>
+                </div>
+
+                <div class="job-list">
+                    <table>
+                        <tr v-for="job in jobs" :key="job.id">
+                            <td class="job-info">
+                                <p class="j-name">{{job.jobName}}</p>
+                                <p class="j-pay">{{job.jobPay}}</p>
+                                <p class="j-welfare">
+                                    <span v-for="welfare in
+                                        getwelfare(job.welfare)" :key="this">{{welfare}}</span>
+                                </p>
+                            </td>
+                            <td class="job-position">
+                                <p>{{job.company.companyAddress}}</p>
+                                <p>{{job.city.cityName}}|{{job.education}}|{{job.workExperience}}开发经验</p>
+                                <p>{{job.publishTime}}</p>
+                            </td>
+                            <td class="job-request">
+                                <button>
+                                    申请
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </body>
+    <script>
+    var vm = new Vue({
+        el: "#JobListPage",
+        data: {
+            jobs: [],
+            requriements: [],
+            sortIndex:1,
+            searchText:null,
+        },
+        mounted() {
+            this.getJobs(null,null,this.searchSort);
+            // this.getRequriements();
+        },
+        methods: {
+            getJobs(searchJob,selectReq,searchSort) {
+                axios.get("http://localhost:5000/job").then(res => {
+                    this.jobs = res.data.jobViews;
+                    this.requriements = res.data.requriementViews;
+                    this.jobs.forEach(element => {
+                        element.publishTime = element.publishTime.replace("T"," ")
+                    });
+                    console.log(this.jobs);
+
+                    if(searchJob !=null)
+                    searchJob();
+                    if(selectReq !=null)
+                    selectReq();
+                    if(searchSort !=null)
+                    searchSort();
+                })
+            },
+            getwelfare(welfare) {
+                console.log(welfare);
+                return welfare.split(",");
+            },
+            // getRequriements() {
+            //     axios.get("http://localhost:14511/requriement").then(res => {
+            //         this.requriements = res.data;
+            //         console.log(this.requriements);
+            //     })
+            // },
+            searchJob(){
+                    this.getJobs(this.searchByText,this.searchByReq,this.searchSort);
+            },
+            searchByText(){
+                if  (this.searchText != null)
+                this.jobs = this.jobs.filter(m=>m.positionInfo.includes(this.searchText));
+            },
+            selectReq(requ, value) {
+                requ.selected = value;
+                this.getJobs(this.searchJob,this.searchByReq,this.searchSort);
+            },
+            searchByReq(){
+                for (let i = 0; i < this.requriements.length; i++) {
+                    const element = this.requriements[i];
+                    if(element.selected==null) continue;
+                    switch (element.requriementKey) {
+                        case "工作经验":
+                            this.jobs = this.jobs.filter(m=>parseInt(m.workExperience.substring(0,1)) <= parseInt(element.selected.substring(0,1)));
+                            break;
+                        case "工作福利":
+                            this.jobs = this.jobs.filter(m=>m.welfare.includes(element.selected));
+                            break;
+                        case "所在城市":
+                            this.jobs = this.jobs.filter(m=>m.workArea.includes(element.selected));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+               
+            },
+            searchSort(){
+                switch (this.sortIndex) {
+                    case 1:
+                        this.sortAll();
+                        break;
+                    case 2:
+                        this.sortPublish();
+                        break;
+                    case 3:
+                        this.sortPay();
+                        break;
+                    default:
+                        break;
+                }
+            },
+            sortPay() {
+                this.sortIndex=3;
+                this.jobs.sort((x,y)=>{
+                    var obj = this.getSortPrice(x,y);
+                    if( obj.maxPayY == obj.maxPayX)
+                        return obj.minPayY - obj.minPayX;
+                    else  
+                        return  obj.maxPayY - obj.maxPayX;
+                })
+           
+            },
+            sortPublish(){
+                this.sortIndex=2;
+                this.jobs.sort((x,y)=>{
+                  var obj = this.getSortPublish(x,y);
+                   return obj.yTime - obj.xTime;
+
+                //    xTime2= Date.parse(xTime);
+                //    yTime2= Date.parse(yTime);
+                //    return yTime2 - xTime2;
+                });
+            },
+            sortAll(){
+                this.sortIndex=1;
+                this.jobs.sort((x,y)=>{
+                    var objPay = this.getSortPrice(x,y);
+                    var objPublish = this.getSortPublish(x,y);
+                    if(objPublish.yTime == objPublish.xTime){
+                        if( objPay.maxPayY == objPay.maxPayX)
+                            return objPay.minPayY - objPay.minPayX;
+                        else  
+                            return  objPay.maxPayY - objPay.maxPayX;
+                        }
+                    else
+                        return objPublish.yTime - objPublish.xTime;
+                });
+            },
+            getSortPrice(x,y){
+                let maxPayX = 0;
+                let maxPayY = 0;
+                let minPayX = 0;
+                let minPayY = 0;
+                if (x.jobPay.includes("万")){
+                    maxPayX = parseFloat(x.jobPay.split("万")[0].split("-")[1] * 10)
+                    minPayX = parseFloat(x.jobPay.split("万")[0].split("-")[0] * 10)
+                }
+                else if (x.jobPay.includes("千")){
+                    maxPayX = parseFloat(x.jobPay.split("万")[0].split("-")[1])
+                    minPayX = parseFloat(x.jobPay.split("万")[0].split("-")[0])
+                }
+                if (y.jobPay.includes("万")){
+                    maxPayY = parseFloat(y.jobPay.split("万")[0].split("-")[1] * 10)
+                    minPayY = parseFloat(y.jobPay.split("万")[0].split("-")[0] * 10)
+                }
+                else if (y.jobPay.includes("千")){
+                    maxPayY = parseFloat(y.jobPay.split("万")[0].split("-")[1])
+                    minPayY = parseFloat(y.jobPay.split("万")[0].split("-")[0])
+                }
+                return {maxPayX:maxPayX,maxPayY:maxPayY,minPayX:minPayX,minPayY:minPayY}
+            },
+            getSortPublish(x,y){
+                var xTime = x.publishTime.replace("T"," ").replace(/-/g,"/");
+                var yTime = y.publishTime.replace("T"," ").replace(/-/g,"/");
+                xTime= new Date(Date.parse(xTime));
+                yTime= new Date(Date.parse(yTime));
+                return {xTime:xTime,yTime:yTime}
+            }
+        },
+
+    })
+</script>
+    <style>
+    * {
+        padding: 0;
+        margin: 0;
+    }
+
+    body {
+        background-color: #eee;
+    }
+
+    .search-pad {
+        height: 100px;
+        padding-top: 60px;
+    }
+
+    .search-pad .search-text {
+        width: 1000px;
+        height: 40px;
+        border: 1px solid #ccc;
+        margin: auto;
+        border-radius: 40px;
+        text-align: center;
+        background-color: #fff;
+    }
+
+    .search-pad .search-text input {
+        width: 900px;
+        height: 38px;
+        border: 0 none;
+        outline: none;
+    }
+
+    .search-pad .search-text img {
+        width: 20px;
+        height: 20px;
+        padding: 10px 20px;
+        float: right;
+        cursor: pointer;
+    }
+
+    .search-pad .search-type {
+        width: 1000px;
+        margin: auto;
+    }
+
+    .search-pad .search-type ul {
+        overflow: hidden;
+        text-align: center;
+        width: 1000px;
+        padding-top: 10px;
+    }
+
+    .search-pad .search-type ul li {
+        list-style: none;
+        display: inline-block;
+        margin-left: 20px;
+        font-size: 13px;
+    }
+
+    .job-filter-pad {
+        width: 1200px;
+        background-color: #fff;
+        margin: auto;
+        border-radius: 3px;
+        padding: 16px;
+        font-size: 14px;
+        border-radius: 6px;
+    }
+
+    .job-filter-pad ul {
+        display: inline-block;
+
+    }
+
+    .job-filter-pad .filter-type {
+        display: block;
+    }
+
+    .job-filter-pad .filter-type>li {
+        list-style: none;
+        margin-bottom: 10px;
+    }
+
+    .job-filter-pad .filter-type>li>span {
+        color: #999;
+    }
+
+    .job-filter-pad .filter-type li:last-child {
+        margin-bottom: 0px;
+    }
+
+    .job-filter-pad .filter-type .filter-item>li.selected {
+        color: rgb(0, 100, 231)
+    }
+
+    .job-filter-pad .filter-type .filter-item>li {
+        list-style: none;
+        display: inline-block;
+        margin-right: 10px;
+        cursor: pointer;
+    }
+
+    .job-filter-pad .selected-filter li {
+        display: inline-block;
+        list-style: none;
+        margin-top: 16px;
+        margin-right: 6px;
+        border: 1px solid orangered;
+        background-color: rgb(255, 240, 213);
+        padding: 1px 6px;
+    }
+
+    .job-list-pad {
+        width: 1200px;
+        padding: 16px;
+        background-color: #fff;
+        margin: auto;
+        margin-top: 10px;
+        border-radius: 6px;
+    }
+
+    .job-list-pad .job-sort-pad {
+        padding-bottom: 16px;
+    }
+
+    .job-list-pad .job-sort-pad>span {
+        margin-right: 16px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .job-list-pad .job-sort-pad>span.selected {
+        color: rgb(0, 100, 231);
+    }
+
+    .job-list-pad .job-sort-pad .job-count {
+        font-size: 14px;
+        float: right;
+    }
+
+    .job-list-pad .job-sort-pad .job-count span {
+        color: rgb(0, 100, 231);
+    }
+
+    .job-list table {
+        width: 100%;
+    }
+
+    .job-list table tr:last-child td {
+        border-bottom: 0 none;
+    }
+
+    .job-list table tr td {
+        border-bottom: 1px solid #ccc;
+        padding: 20px 0;
+    }
+
+    .job-list .job-info {
+        width: 40%;
+    }
+
+    .job-list .job-info p {
+        margin-bottom: 10px;
+    }
+
+    .job-list .job-info .j-name {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .job-list .job-info .j-pay {
+        color: rgb(228, 158, 8);
+        font-size: 18px;
+    }
+
+    .job-list .job-info .j-welfare span {
+        font-size: 12px;
+        margin-right: 10px;
+        background-color: #eee;
+        padding: 4px 8px;
+        border-radius: 10px;
+    }
+
+    .job-list .job-position {
+        width: 30%;
+    }
+
+    .job-list .job-position p:first-child {
+        color: #000;
+    }
+
+    .job-list .job-position p {
+        font-size: 14px;
+        margin-bottom: 10px;
+        color: #999;
+    }
+
+    .job-list .job-request {
+        width: 18%;
+    }
+
+    .job-list .job-request button {
+        float: right;
+        margin-right: 10px;
+        height: 30px;
+        width: 80px;
+        background-color: rgb(0, 100, 231);
+        color: #fff;
+        border: 0 none;
+        border-radius: 30px;
+    }
+</style>
+</html>

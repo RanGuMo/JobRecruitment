@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <script src="../lib/vue.min.js"></script>
+    </head>
+    <body>
+        <ul id="test">
+            <li v-for="user in users">
+                <!-- <input type="checkbox" name="" id="" v-model="user.checked"> -->
+                <span :class="{'selected':user.checked}" @click="clickMe(user)"></span>
+                {{user.userName}}
+            </li>
+        </ul>
+    </body>
+    <script>
+    var vm = new Vue({
+        el:"#test",
+        data:{
+            users:[],
+        },
+        mounted() {
+            // this.users.push({userName:"张三",age:18,checked:false});
+            // this.users.push({userName:"李四",age:18,checked:false});
+            // this.users.push({userName:"王五",age:18,checked:false});
+            // this.users.push({userName:"赵六",age:18,checked:false});
+            this.users.push({userName:"张三",age:18});
+            this.users.push({userName:"李四",age:18});
+            this.users.push({userName:"王五",age:18});
+            this.users.push({userName:"赵六",age:18});
+            for (let i = 0; i < this.users.length; i++) {
+                const element = this.users[i];
+                element.checked = true;
+            }
+            this.$forceUpdate();
+            // this.users.forEach(element => {
+            //     element["checked"] = true;
+            // });
+        },
+        methods: {
+            clickMe(user){
+                user.checked = !user.checked;
+                //this.$forceUpdate();
+            }
+        },
+    })
+</script>
+    <style>
+    span{
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border:1px sandybrown solid;
+    }
+    span.selected{
+        background-color:brown;
+    }
+</style>
+</html>
